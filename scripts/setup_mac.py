@@ -7,7 +7,7 @@ import json
 from os.path import isdir
 
 import subprocess
-import platform
+import pathlib
 import setuptools
 from setuptools import Command
 from setuptools.command.develop import develop
@@ -179,34 +179,9 @@ def prep_mcp():
             )
 
         os.chdir(old_dir)
-
-    elif platform.system() != "Darwin":
-        old_dir = os.getcwd()
-        os.chdir(os.path.join(mydir, 'scripts'))
-
-        try:
-            setup_output = subprocess.check_output(['bash', 'setup_mcp.sh']).decode(errors="ignore")
-            if "ERROR: JAVA_HOME" in setup_output:
-                raise RuntimeError("Java JDK 8 is required. Install it and retry.")
-            elif "Cannot lock task history" in setup_output:
-                raise RuntimeError("Kill all Java processes and retry.")
-            
-            subprocess.check_call(['bash', 'patch_mcp.sh'])
-        except subprocess.CalledProcessError:
-            raise RuntimeError("Installation script failed. Check logs above.")
-
-        os.chdir(old_dir)
-
     else:
         subprocess.check_call(['bash', os.path.join(mydir, 'scripts', 'setup_mcp.sh')])
-        
-        patch_script = os.path.join(mydir, 'scripts', 'patch_mcp.sh')
-        if platform.machine() == 'arm64':
-            print("Running on Mac Silicon (ARM), using Mac Silicon patch.")
-            subprocess.check_call(['bash', patch_script, '--mac'])
-        else:
-            print("Running on Mac Intel (x86_64), using standard patch.")
-            subprocess.check_call(['bash', patch_script])
+        subprocess.check_call(['bash', os.path.join(mydir, 'scripts', 'patch_mac_mcp.sh')])
 
     # Next, move onto building the MCP source
     gradlew = 'gradlew.bat' if os.name == 'nt' else './gradlew'
